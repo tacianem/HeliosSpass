@@ -26,7 +26,7 @@ functions[
 % The voting components:
 (vote,0), %the vote
 (voterid,0), %voterid
-(password,0), %voterid
+(password,0), %password
 (r,0), %
 (qrcode,0),%
 (vote_att,0), %attacker's vote
