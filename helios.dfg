@@ -1,0 +1,398 @@
+begin_problem(helios).
+
+list_of_descriptions.
+name({*Helios Ceremony*}).
+author({*Anonymous*}).
+status(satisfiable).
+description({* Helios Ceremony *}).
+end_of_list.
+
+list_of_symbols.
+functions[
+% The message sending function:
+(sent,3),
+%The concatenation function:
+(concat,2),
+
+%% Ceremony-specific constants:
+% The agents (devices):
+(a,0), %app
+(v,0), %voter
+(b,0), %booth
+(bb,0), %bulletin board
+(i,0), %institute
+(att,0), %attacker
+
+% The voting components:
+(vote,0), %the vote
+(voterid,0), %voterid
+(password,0), %voterid
+(r,0), %
+(qrcode,0),%
+(vote_att,0), %attacker's vote
+(r_att,0),%attacker's r
+
+% The keys:
+(pk,0),
+(encr,2),
+
+% The hash function:
+(h,1),
+
+% Pages:
+(instructions_page,0),
+(ballot_page,0),
+(review_page,0),
+(verifying_options_page,0),
+(vote_is_submitted,0),
+
+% Requests:
+(url,0),
+(proceed_to_ballot,0),
+(review_vote,0),
+(encrypt_vote,0),
+(check_encrypted_vote,0)
+
+].
+
+predicates[
+% Agent-related predicates:
+(Agent,1), (Honest,1),
+%Initiator(x): agent x initiates the protocol
+(Initiator,1), 
+% Knowledge base predicate:
+(Knows,2),
+% The channels
+(MDD,1), (MHD,1), (MHH,1),
+% Intruder predicates:
+%(Intruder, 1),
+(BlocksAgentOnce,2)
+].
+end_of_list.
+
+list_of_formulae(axioms).
+%%%
+% Preliminaries:
+%%%
+
+formula( Agent(a) ).
+formula( Agent(v) ).
+formula( Initiator(v) ).
+formula( Agent(b) ).
+formula( Agent(bb) ).
+formula( Agent(i) ).
+formula( Agent(att) ).
+
+% Concatenation operations:
+formula( forall( [x, y, z],
+		implies(
+			and(
+				Agent(x),
+				Knows(y, x),
+				Knows(z, x)
+			),
+			Knows(concat(y, z),x) ) ), concatenate ).
+			
+formula( forall( [x, y, z],
+		implies(
+			and(
+				Agent(x),
+				Knows(concat(y,z), x)
+			),
+			and(
+				Knows(y,x),
+				Knows(z,x)) ) ), deconcatenate ).
+
+
+formula( forall( [xa, xb, xm],
+		implies(
+			MDD(sent(xa, xb, xm) ),
+			Knows(xm, xb) ) ), MDD_in_knowledge ).
+		
+formula( forall( [xa, xb, xm],
+		implies(
+			MHD(sent(xa, xb, xm) ),
+			Knows(xm, xb) ) ), MHD_in_knowledge ).
+			
+formula( forall( [xa, xb, xm],
+		implies(
+			MHH(sent(xa, xb, xm) ),
+			Knows(xm, xb) ) ), MHH_in_knowledge ).
+
+%%%
+% Institute test vote ceremony
+%%%			
+
+
+formula( forall([x], 
+		implies(
+			Agent(x),
+			MHD( sent( x, b, url ) ) 
+			) ), step1 ).
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( x, b, url ) )), %step1 has occurred
+			MHD( sent( b, x, instructions_page ) ) 
+			) ), step2 ).
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( b, x, instructions_page ) )), %step2 has occurred
+			MHD( sent( x, b, proceed_to_ballot ) ) 
+			) ), step3 ).		
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( x, b, proceed_to_ballot ) )), %step3 has occurred
+			MHD( sent( b, x, ballot_page ) ) 
+			) ), step4 ).			
+			
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( b, x, ballot_page ) )), %step4 has occurred
+			MHD( sent( x, b, vote ) ) 
+			) ), step5 ).		
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( x, b, vote ) )), %step5 has occurred
+			MHD( sent( x, b, review_vote ) ) 
+			) ), step6 ).	
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( x, b, review_vote ) )), %step6 has occurred
+			MHD( sent( b, x, review_page ) ) 
+			) ), step7 ).								
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( b, x, review_page  ) )), %step7 has occurred
+			MHD( sent( x, b, encrypt_vote ) ) 
+			) ), step8 ).	
+			
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( x, b, encrypt_vote) )), %step8 has occurred
+			MHD( sent( b, x, h(encr(concat(vote,r),pk)) ) ) 
+			) ), step9 ).			
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( b, x, h(encr(concat(vote,r),pk)) ) )), %step9 has occurred
+			MHD( sent( x, b, check_encrypted_vote ) ) 
+			) ), step10 ).	
+			
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( x, b, check_encrypted_vote ) )), %step10 has occurred
+			MHD( sent( b, x, verifying_options_page ) ) 
+			) ), step11 ).							
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( b, x, verifying_options_page ) )), %step11 has occurred
+			MHD( sent( x, b, i ) ) 
+			) ), step12 ).	
+
+formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MHD( sent( x, b, i ) )), %step12 has occurred
+			MDD( sent( b, i, concat(vote,r) ) ) 
+			) ), step13 ).	
+			
+	formula( forall([x], 
+		implies(
+			and(
+				Agent(x),
+				MDD( sent( b, i, concat(vote,r) ) )), %step13 has occurred
+			MHD( sent( i, x, concat( h(encr(concat(vote,r),pk)),vote ) ) 
+			) ) ), step14 ).	
+			
+
+
+%%%
+% Dolev-Yao Attacker Model over DD channel
+%%%
+% list of capabilities: eav, init, atom, block, crypto, fabricate, spoof, reorder, modify, replay 
+
+formula( Agent(att), Att_is_agent ).
+
+% Eavesdrop (E): Attacker may eavesdrop over device-device channel
+formula( forall([xa, xb, xm],
+		implies(
+			and(
+				Agent(xa),
+				Agent(xb),
+				MDD( sent( xa, xb, xm ) ) ),
+			Knows( xm,att ) ) ), Att_eavesdrops_MDD ).
+
+% Spoof (S): Attacker may spoof messages over device-device channel
+formula( forall([xa, xb, xm],
+		implies(
+			and(
+				Agent(xa),
+				Agent(xb),
+				Knows( xm,att ) ),
+			MDD( sent( xa, xb, xm ) ) )  ), Att_spoofs_MDD ).			
+
+% Eavesdrop (E): Attacker may eavesdrop over human-device channel
+formula( forall([xa, xb, xm],
+		implies(
+			and(
+				Agent(xa),
+				Agent(xb),
+				MHD( sent( xa, xb, xm ) ) ),
+			Knows( xm,att ) ) ), Att_eavesdrops_MHD ).
+
+% Spoof (S): Attacker may spoof messages over human-device channel
+formula( forall([xa, xb, xm],
+		implies(
+			and(
+				Agent(xa),
+				Agent(xb),
+				Knows( xm,att ) ),
+			MHD( sent( xa, xb, xm ) ) )  ), Att_spoofs_MHD ).			
+			
+ 
+% Initiates (I): attacker may initiate message exchange over device-device channel
+ formula( forall ([xi, xb, xm],
+		 implies(
+			 and(
+				 Agent(xb),
+				 Knows( xm,att ) ),
+			 and(
+				 MDD( sent(att, xb, xm) ),
+				 Initiator(att))) ), Att_initiates_MDD).
+
+% Initiates (I): attacker may initiate message exchange over human-device channel
+ formula( forall ([xi, xb, xm],
+		 implies(
+			 and(
+				 Agent(xb),
+				 Knows( xm,att ) ),
+			 and(
+				 MHD( sent(att, xb, xm) ),
+				 Initiator(att))) ), Att_initiates_MHD).
+ 
+ %Block (B): Attacker may block a maximum of  one message per agent over Device-to-Device channel
+ formula( forall([xa,xb,xm],
+		 implies(
+			 and(
+				 Agent(xa),
+				 Agent(xb),
+				 MDD(sent(xa,xb,xm)),
+				 not( exists([xblock], BlocksAgentOnce(xblock, xb)) )),
+			 and(
+				 not(Knows(xm, xb)),
+				 BlocksAgentOnce(xm,xb)))), Att_blocks_once_per_agent_MDD ).
+				 
+%Block (B): Attacker may block a maximum of  one message per agent over Device-to-Human channel
+formula( forall([xa,xb,xm],
+		 implies(
+			 and(
+				 Agent(xa),
+				 Agent(xb),
+				 MHD(sent(xa,xb,xm)),
+				 not( exists([xblock], BlocksAgentOnce(xblock, xb)) )),
+			 and(
+				 not(Knows(xm, xb)),
+				 BlocksAgentOnce(xm,xb)))), Att_blocks_once_per_agent_MHD ).				
+
+			 
+end_of_list.
+ 
+list_of_formulae(conjectures). 
+% Saturation of Main Logic Model
+% (run the problem without conjectures and all of the intruder model formulae disabled)
+
+% Normal Execution
+% (run the problem with all of the intruder model formulae disabled)
+%formula( Knows( concat( h(encr(concat(vote,r),pk)),vote ), v), normal_execution).
+
+%
+% Saturation of Intruder Model
+% (run the entire problem without conjectures)
+ 
+% Theorem 1: Test vote is correctly encrypted on the voting device. (Based on Figure 1)
+ formula( and(
+		Knows( vote, att ),
+		Knows( r, att ),
+		Knows( vote_att, att ),
+		Knows( vote, b ),
+		not(Knows( concat(vote, r), i )),
+	Knows( concat(vote_att, r), i )), theorem_1 ). % %
+ 
+ % Theorem 2: Final vote is correctly stored on the voting server or public web bulletin board (based on Figure 2)
+ % formula( and(
+%		Knows( encr(vote,pk), att ),
+%		Knows( encr(vote_att,pk), att ),
+%		Knows( encr(vote,pk), att ),
+%		Knows( h(encr(concat(vote,r),pk)), att ),
+%		Knows( h(encr(concat(vote_att,r_att),pk)), att ),
+%		Knows( vote, b ),
+%		not(Knows( encr(vote,pk), bb )),
+%		Knows( encr(vote_att,pk), bb ),
+%		not(Knows( h(encr(concat(vote,r),pk)), i)),
+%		Knows( h(encr(concat(vote_att,r_att),pk)), i)), theorem_2 ). % %
+ 
+ 
+ % Theorem 3: Verify vote is correctly encrypted on the voting device. (Based on Figure 3)
+ % encrypt without the eavesdrop in DD nd HD
+ 
+
+% Theorem 4: Final vote is correctly stored on the voting server or public web bulletin board (based on Figure 4)
+  % formula( and(
+%		Knows( encr(vote_att,pk), att ),
+%		Knows( encr(vote,pk), att ),
+%		Knows( h(encr(concat(vote,r),pk)), att ),
+%		Knows( h(encr(concat(vote_att,r_att),pk)), att ),
+%		Knows( vote, b ),
+%		not(Knows( encr(vote,pk), bb )),
+%		not(Knows( vote, bb )),
+%		Knows( concat( encr( concat(vote_att, r_att), pk ) ),bb )), theorem_4 ). %
+				
+end_of_list.
+
+list_of_settings(SPASS).
+{*
+% 1 = on / 0 = off
+set_flag(Auto,1). %Auto-mode
+set_flag(PKept,1). %Prints kept clauses
+set_flag(PGiven,0). %Prints given clauses
+set_flag(PDer,0). %Prints derived clauses
+set_flag(DocProof,1). %Documents proof found
+set_flag( Loops, -1 ). %Maximum number of loops
+set_flag( DocSST, 0 ). %Prints documentation output for static soft typing
+
+
+*}
+end_of_list.
+
+end_problem.
+
